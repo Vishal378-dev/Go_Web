@@ -4,10 +4,10 @@ go 1.23.3
 
 require (
 	github.com/compose-spec/compose-go/v2 v2.4.8
-	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	go.mongodb.org/mongo-driver/v2 v2.1.0
 	golang.org/x/crypto v0.36.0
+	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3
 )
 
 require (

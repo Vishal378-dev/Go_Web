@@ -58,3 +58,20 @@ func NewUser() User {
 		Updated:  time.Now(),
 	}
 }
+
+type UserRequestSignUp struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (urs *UserRequestSignUp) ValidateUserRequestSignup() error {
+	regex := `^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`
+	validEmailReg := regexp.MustCompile(regex)
+	if urs.Email == "" || !validEmailReg.MatchString(urs.Email) {
+		return fmt.Errorf("invalid Email")
+	}
+	if urs.Password == "" {
+		return fmt.Errorf("invalid Password")
+	}
+	return nil
+}

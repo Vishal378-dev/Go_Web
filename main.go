@@ -44,7 +44,7 @@ func main() {
 	// user Collection
 	r.HandleFunc("/user", UserAuthenticate(Users.Users(userCollection), userCollection))
 	r.HandleFunc("/user/{id}", UserAuthenticate(Users.UserDeleteOrUpdate(userCollection), userCollection))
-
+	r.HandleFunc("/user/login", Users.Login(userCollection))
 	//checkingMiddleware
 	r.HandleFunc("/middle", UserAuthenticate(Middleware.Authorize(userCollection), userCollection))
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -213,6 +214,52 @@ func UserDeleteOrUpdate(userCollection *mongo.Collection) http.HandlerFunc {
 				utils.ResponseWriter(w, http.StatusUnauthorized, utils.CommonError(fmt.Errorf("you are not allowed to access the record"), http.StatusUnauthorized))
 				return
 			}
+		} else {
+			Handlers.WrongPathTemplate(w, r)
+			return
+		}
+	}
+}
+
+func Login(userCollection *mongo.Collection) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			var requestBody types.UserRequestSignUp
+			err := json.NewDecoder(r.Body).Decode(&requestBody)
+			if err != nil {
+				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(err, http.StatusBadRequest))
+				return
+			}
+			err = requestBody.ValidateUserRequestSignup()
+			if err != nil {
+				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(err, http.StatusBadRequest))
+				return
+			}
+			var userByEmail types.User
+			err = userCollection.FindOne(context.TODO(), bson.M{"email": requestBody.Email}).Decode(&userByEmail)
+			if err != nil {
+				if err == mongo.ErrNoDocuments {
+					slog.Error("Signup : -User Entry Not found")
+					utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("incorrect credentials email or password"), http.StatusBadRequest))
+					return
+				}
+				utils.ResponseWriter(w, http.StatusInternalServerError, utils.CommonError(fmt.Errorf("incorrect credentials email or password"), http.StatusInternalServerError))
+				return
+			}
+			isCorrectPassword := utils.ComparePassword(requestBody.Password, userByEmail.Password)
+			if !isCorrectPassword {
+				slog.Error("Signup : -Password Incorrect")
+				utils.ResponseWriter(w, http.StatusInternalServerError, utils.CommonError(fmt.Errorf("incorrect credentials email or password"), http.StatusInternalServerError))
+				return
+			}
+			token, err := utils.NewAccessToken(types.UserClaims{Name: userByEmail.Name, Email: userByEmail.Email, Phone: userByEmail.Phone, Role: userByEmail.Role, RegisteredClaims: jwt.RegisteredClaims{IssuedAt: jwt.NewNumericDate(time.Now().UTC()), ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute * 5))}})
+			if err != nil {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while generating the token"), http.StatusBadRequest))
+				return
+			}
+			userByEmail.Password = ""
+			utils.ResponseWriter(w, http.StatusCreated, map[string]any{"user": userByEmail, "token": token})
+			return
 		} else {
 			Handlers.WrongPathTemplate(w, r)
 			return
