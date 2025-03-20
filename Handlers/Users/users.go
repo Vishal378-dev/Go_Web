@@ -21,6 +21,15 @@ import (
 func Users(userCollection *mongo.Collection) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
+			currentUser, ok := r.Context().Value("authorizeduser").(*types.User)
+			if !ok {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while parsing the data"), http.StatusBadRequest))
+				return
+			}
+			if currentUser.Role != "Admin" {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("only admin can acces the users"), http.StatusBadRequest))
+				return
+			}
 			var users []types.User
 			cursor, err := userCollection.Find(context.TODO(), bson.D{}, options.Find().SetProjection(bson.D{{
 				Key:   "password",
@@ -50,12 +59,21 @@ func Users(userCollection *mongo.Collection) http.HandlerFunc {
 				return
 			}
 			err = user.ValidateRequest()
+			if user.Role == "" {
+				user.Role = "USER"
+			}
 			if err != nil {
 				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(err, http.StatusBadRequest))
 				return
 			}
 			var getUser types.User
-			err = userCollection.FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&getUser)
+			userQueryFilter := bson.D{{Key: "$or", Value: bson.A{
+				bson.D{{Key: "email", Value: user.Email}},
+				bson.D{{Key: "phone", Value: user.Phone}},
+			},
+			},
+			}
+			err = userCollection.FindOne(context.TODO(), userQueryFilter).Decode(&getUser)
 			if err != nil {
 				if err != mongo.ErrNoDocuments {
 					utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(err, http.StatusBadRequest))
@@ -63,13 +81,14 @@ func Users(userCollection *mongo.Collection) http.HandlerFunc {
 				}
 			}
 			if getUser.Email != "" {
-				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("email already present"), http.StatusBadRequest))
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("email/phone already present"), http.StatusBadRequest))
 				return
 			}
 			hashedPassword, _ := utils.HashPassword(user.Password)
 			user.Password = hashedPassword
 			user.Created = time.Now()
 			user.Updated = time.Now()
+
 			result, err := userCollection.InsertOne(context.TODO(), user)
 			if err != nil {
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(err, http.StatusBadRequest))
@@ -150,7 +169,7 @@ func UserDeleteOrUpdate(userCollection *mongo.Collection) http.HandlerFunc {
 			updateFields["updated_at"] = time.Now()
 			result, err := userCollection.UpdateOne(context.TODO(), bson.D{{Key: "_id", Value: id}}, bson.M{"$set": updateFields})
 			if err != nil {
-				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(fmt.Errorf("err while updating"), http.StatusBadRequest))
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("err while updating"), http.StatusBadRequest))
 				return
 			}
 			utils.ResponseWriter(w, http.StatusOK, map[string]interface{}{"msg": result})

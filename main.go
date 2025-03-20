@@ -14,6 +14,7 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/dotenv"
 	db "github.com/vishal/reservation_system/DB"
+	"github.com/vishal/reservation_system/Handlers/Hotels"
 	"github.com/vishal/reservation_system/Handlers/Middleware"
 	"github.com/vishal/reservation_system/Handlers/Users"
 	utils "github.com/vishal/reservation_system/Handlers/Utils"
@@ -21,6 +22,7 @@ import (
 	"github.com/vishal/reservation_system/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -33,6 +35,7 @@ func main() {
 	mongoClient := db.DB_Connection(MONGODB_URI)
 
 	userCollection := mongoClient.Database("reservation").Collection("Users")
+	hotelCollection := mongoClient.Database("reservation").Collection("Hotels")
 
 	utils.CreateEmailIndex(userCollection)
 	if PORT == "" {
@@ -47,6 +50,17 @@ func main() {
 	r.HandleFunc("/user/login", Users.Login(userCollection))
 	//checkingMiddleware
 	r.HandleFunc("/middle", UserAuthenticate(Middleware.Authorize(userCollection), userCollection))
+
+	// Hotel
+	// rate limiter for hotel
+	hotelApiRateLimiter := RateLimiter{
+		Rate:  5,
+		Burst: 2,
+	}
+	r.HandleFunc("/hotels", UserAuthenticate(Hotels.Hotel(hotelCollection), userCollection))
+	r.HandleFunc("/allhotels", Hotels.Hotel(hotelCollection))
+	r.HandleFunc("/hotel/{id}", hotelApiRateLimiter.ApiRateLimiter(Hotels.HotelById(hotelCollection)))
+	r.HandleFunc("/hotels/{id}", UserAuthenticate(Hotels.UpdateHotelById(hotelCollection), userCollection))
 
 	server := http.Server{
 		Addr:    PORT,
@@ -86,7 +100,7 @@ func UserAuthenticate(next http.HandlerFunc, userCollection *mongo.Collection) h
 		}
 		token := r.Header.Get("token")
 		if token == "" {
-			utils.ResponseWriter(w, http.StatusUnauthorized, utils.CommonError(fmt.Errorf("No Token Found"), http.StatusUnauthorized))
+			utils.ResponseWriter(w, http.StatusUnauthorized, utils.CommonError(fmt.Errorf("no token found"), http.StatusUnauthorized))
 			return
 		}
 		claims, err := utils.ParseToken(token, os.Getenv("TOKEN_SECRET"))
@@ -104,5 +118,29 @@ func UserAuthenticate(next http.HandlerFunc, userCollection *mongo.Collection) h
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 		return
+	})
+}
+
+type RateLimiter struct {
+	Rate  int
+	Burst int
+}
+
+func (rl *RateLimiter) ApiRateLimiter(next http.HandlerFunc) http.HandlerFunc {
+	limiter := rate.NewLimiter(rate.Every(time.Second*time.Duration(rl.Rate)), rl.Burst)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !limiter.Allow() {
+			errMsg := struct {
+				Msg  string `json:"msg"`
+				Body string `json:"body"`
+			}{
+				Msg:  "too many Request",
+				Body: "Please Try after few seconds",
+			}
+			utils.ResponseWriter(w, http.StatusTooManyRequests, utils.CommonError(fmt.Errorf("+%v", errMsg), http.StatusTooManyRequests))
+			return
+		} else {
+			next(w, r)
+		}
 	})
 }

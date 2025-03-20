@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/vishal/reservation_system/types"
@@ -95,4 +96,8 @@ func ParseToken(tokenString string, secretKey string) (*types.UserClaims, error)
 	} else {
 		return nil, fmt.Errorf("invalid token")
 	}
+}
+
+func Ctx(timeOutSeconds int8) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.TODO(), time.Second*time.Duration(timeOutSeconds))
 }

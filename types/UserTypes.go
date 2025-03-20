@@ -3,6 +3,8 @@ package types
 import (
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -40,8 +42,18 @@ func (u *User) ValidateRequest() error {
 	if u.Password == "" || len(u.Password) < 7 {
 		return fmt.Errorf("invalid Password")
 	}
-	if u.Phone == "" || len(u.Phone) != 10 {
+	i, err := strconv.ParseInt(u.Phone, 10, 64)
+	if err != nil {
+		return fmt.Errorf("somenthing went wrong +%v", err)
+	}
+
+	if len(u.Phone) != 10 || i < 6000000000 || i > 9999999999 {
 		return fmt.Errorf("invalid Phone")
+	}
+
+	if len(u.Role) > 0 && strings.ToLower(u.Role) != "user" {
+		return fmt.Errorf("only user role accepted")
+
 	}
 	return nil
 }
