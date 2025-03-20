@@ -16,6 +16,7 @@ import (
 	db "github.com/vishal/reservation_system/DB"
 	"github.com/vishal/reservation_system/Handlers/Hotels"
 	"github.com/vishal/reservation_system/Handlers/Middleware"
+	rooms "github.com/vishal/reservation_system/Handlers/Rooms"
 	"github.com/vishal/reservation_system/Handlers/Users"
 	utils "github.com/vishal/reservation_system/Handlers/Utils"
 	Handlers "github.com/vishal/reservation_system/Handlers/dummy"
@@ -36,6 +37,7 @@ func main() {
 
 	userCollection := mongoClient.Database("reservation").Collection("Users")
 	hotelCollection := mongoClient.Database("reservation").Collection("Hotels")
+	roomCollection := mongoClient.Database("reservation").Collection("Rooms")
 
 	utils.CreateEmailIndex(userCollection)
 	if PORT == "" {
@@ -62,6 +64,8 @@ func main() {
 	r.HandleFunc("/hotel/{id}", hotelApiRateLimiter.ApiRateLimiter(Hotels.HotelById(hotelCollection)))
 	r.HandleFunc("/hotels/{id}", UserAuthenticate(Hotels.UpdateHotelById(hotelCollection), userCollection))
 
+	// rooms
+	r.HandleFunc("/room", rooms.POSTRooms(roomCollection, hotelCollection))
 	server := http.Server{
 		Addr:    PORT,
 		Handler: r,
