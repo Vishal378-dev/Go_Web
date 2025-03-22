@@ -4,7 +4,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// rooms need to be added here
 type Hotel struct {
 	ID              interface{}     `bson:"_id,omitempty"`
 	Name            string          `json:"name" bson:"name"`
@@ -17,5 +16,5 @@ type Hotel struct {
 	AdditionalInfo2 string          `json:"additionalinfo2,omitempty" bson:"additionalinfo2,omitempty"`
 	AdditionalInfo3 any             `json:"additionalinfo3,omitempty" bson:"additionalinfo3,omitempty"`
 	TypesOfRooms    []string        `json:"typesofrooms,omitempty" bson:"typesofrooms,omitempty"`
-	Room            []bson.ObjectID `json:"rooms,omitempty" bson:"rooms,omitempty"`
+	Rooms           []bson.ObjectID `json:"rooms,omitempty" bson:"rooms,omitempty"`
 }

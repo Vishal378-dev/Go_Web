@@ -42,6 +42,15 @@ func POSTRooms(roomCollection, hotelCollection *mongo.Collection) http.HandlerFu
 		defer cancel()
 		if r.Method == "POST" {
 			var Room *types.Room
+			currentUser, ok := r.Context().Value("authorizeduser").(*types.User)
+			if !ok {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while parsing the data"), http.StatusBadRequest))
+				return
+			}
+			if currentUser.Role != "Admin" {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("only admin is allowed to perform this action"), http.StatusBadRequest))
+				return
+			}
 			if err := json.NewDecoder(r.Body).Decode(&Room); err != nil {
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("invalid request -%s", err.Error()), http.StatusBadRequest))
 				return
@@ -51,12 +60,18 @@ func POSTRooms(roomCollection, hotelCollection *mongo.Collection) http.HandlerFu
 				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(err, http.StatusBadRequest))
 				return
 			}
+			var FetchedRoom types.Room
+			roomCollection.FindOne(ctx, bson.M{"roomnumber": Room.RoomNumber}).Decode(&FetchedRoom)
+			if FetchedRoom.RoomNumber == Room.RoomNumber {
+				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(fmt.Errorf("room number is already present"), http.StatusBadRequest))
+				return
+			}
 			result, err := roomCollection.InsertOne(ctx, Room)
 			if err != nil {
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while inserting room -%s", err.Error()), http.StatusBadRequest))
 				return
 			}
-			result2, err := hotelCollection.UpdateOne(ctx, bson.D{{Key: "_id", Value: id}}, bson.M{"$push": bson.M{"hotelid": id}})
+			result2, err := hotelCollection.UpdateOne(ctx, bson.D{{Key: "_id", Value: id}}, bson.M{"$push": bson.M{"rooms": result.InsertedID}})
 			if err != nil {
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while inserting room -%s", err.Error()), http.StatusBadRequest))
 				return

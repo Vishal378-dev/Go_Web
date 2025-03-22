@@ -65,7 +65,7 @@ func main() {
 	r.HandleFunc("/hotels/{id}", UserAuthenticate(Hotels.UpdateHotelById(hotelCollection), userCollection))
 
 	// rooms
-	r.HandleFunc("/room", rooms.POSTRooms(roomCollection, hotelCollection))
+	r.HandleFunc("/room", UserAuthenticate(rooms.POSTRooms(roomCollection, hotelCollection), userCollection))
 	server := http.Server{
 		Addr:    PORT,
 		Handler: r,

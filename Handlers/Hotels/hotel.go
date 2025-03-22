@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -82,13 +83,66 @@ func HotelById(hotelCollection *mongo.Collection) http.HandlerFunc {
 			return
 		}
 		if r.Method == "GET" {
+			isRoom := r.URL.Query().Get("isRoom")
 			var hotels types.Hotel
-			err := hotelCollection.FindOne(context.TODO(),
-				bson.M{"_id": id}).Decode(&hotels)
+			if isRoom == "true" {
+				pipeline := bson.A{
+					bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: id}}}},
+					bson.M{
+						"$lookup": bson.M{
+							"from":         "Rooms",
+							"localField":   "rooms",
+							"foreignField": "_id",
+							"as":           "roomDetails",
+						},
+					},
+					// bson.M{      // uncomment if you want to have each room detail as an object
+					// 	"$unwind": bson.M{
+					// 		"path":                       "$roomDetails",
+					// 		"preserveNullAndEmptyArrays": true,
+					// 	},
+					// },
+					bson.M{
+						"$project": bson.M{
+							"Address":      1,
+							"address":      1,
+							"amenities":    1,
+							"description":  1,
+							"hotelid":      1,
+							"name":         1,
+							"review":       1,
+							"star":         1,
+							"typesofrooms": 1,
+							"roomDetails":  1,
+						},
+					},
+				}
+				cursor, err := hotelCollection.Aggregate(context.TODO(), pipeline)
+				if err != nil {
+					utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("no record found"), http.StatusBadRequest))
+					return
+				}
+				defer cursor.Close(context.TODO())
 
-			if err != nil {
-				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("no record found"), http.StatusBadRequest))
+				var results []bson.M
+				if err = cursor.All(context.TODO(), &results); err != nil {
+					log.Fatal(err)
+				}
+				Response := types.SuccessResponse{
+					Status: http.StatusOK,
+					Data:   results,
+				}
+				utils.ResponseWriter(w, http.StatusOK, Response)
 				return
+
+			} else {
+				err := hotelCollection.FindOne(context.TODO(),
+					bson.M{"_id": id}).Decode(&hotels)
+
+				if err != nil {
+					utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("no record found"), http.StatusBadRequest))
+					return
+				}
 			}
 
 			Response := types.SuccessResponse{
