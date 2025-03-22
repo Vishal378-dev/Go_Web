@@ -55,6 +55,11 @@ func POSTRooms(roomCollection, hotelCollection *mongo.Collection) http.HandlerFu
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("invalid request -%s", err.Error()), http.StatusBadRequest))
 				return
 			}
+			err := Room.RequestValidation()
+			if err != nil {
+				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(err, http.StatusBadRequest))
+				return
+			}
 			id, err := bson.ObjectIDFromHex(Room.HotelID.Hex())
 			if err != nil {
 				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(err, http.StatusBadRequest))

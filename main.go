@@ -60,7 +60,7 @@ func main() {
 		Burst: 2,
 	}
 	r.HandleFunc("/hotels", UserAuthenticate(Hotels.Hotel(hotelCollection), userCollection))
-	r.HandleFunc("/allhotels", Hotels.Hotel(hotelCollection))
+	r.HandleFunc("/allhotels", hotelApiRateLimiter.ApiRateLimiter(Hotels.Hotel(hotelCollection)))
 	r.HandleFunc("/hotel/{id}", hotelApiRateLimiter.ApiRateLimiter(Hotels.HotelById(hotelCollection)))
 	r.HandleFunc("/hotels/{id}", UserAuthenticate(Hotels.UpdateHotelById(hotelCollection), userCollection))
 
