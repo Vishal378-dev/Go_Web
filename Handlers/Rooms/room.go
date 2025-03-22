@@ -1,12 +1,13 @@
-package rooms
+package Rooms
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	utils "github.com/vishal/reservation_system/Handlers/Utils"
-	Handlers "github.com/vishal/reservation_system/Handlers/dummy"
+	Handlers "github.com/vishal/reservation_system/Handlers/WrongPath"
 	"github.com/vishal/reservation_system/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -71,12 +72,14 @@ func POSTRooms(roomCollection, hotelCollection *mongo.Collection) http.HandlerFu
 				utils.ResponseWriter(w, http.StatusNotImplemented, utils.CommonError(fmt.Errorf("room number is already present"), http.StatusBadRequest))
 				return
 			}
+			Room.Created = time.Now()
+			Room.Updated = time.Now()
 			result, err := roomCollection.InsertOne(ctx, Room)
 			if err != nil {
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while inserting room -%s", err.Error()), http.StatusBadRequest))
 				return
 			}
-			result2, err := hotelCollection.UpdateOne(ctx, bson.D{{Key: "_id", Value: id}}, bson.M{"$push": bson.M{"rooms": result.InsertedID}})
+			result2, err := hotelCollection.UpdateOne(ctx, bson.D{{Key: "_id", Value: id}}, bson.M{"$push": bson.M{"rooms": result.InsertedID}, "$set": bson.M{"updated_at": time.Now()}})
 			if err != nil {
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while inserting room -%s", err.Error()), http.StatusBadRequest))
 				return

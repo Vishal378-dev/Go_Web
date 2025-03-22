@@ -14,12 +14,13 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/dotenv"
 	db "github.com/vishal/reservation_system/DB"
+	"github.com/vishal/reservation_system/Handlers/Account"
 	"github.com/vishal/reservation_system/Handlers/Hotels"
 	"github.com/vishal/reservation_system/Handlers/Middleware"
-	rooms "github.com/vishal/reservation_system/Handlers/Rooms"
+	Rooms "github.com/vishal/reservation_system/Handlers/Rooms"
 	"github.com/vishal/reservation_system/Handlers/Users"
 	utils "github.com/vishal/reservation_system/Handlers/Utils"
-	Handlers "github.com/vishal/reservation_system/Handlers/dummy"
+	Handlers "github.com/vishal/reservation_system/Handlers/WrongPath"
 	"github.com/vishal/reservation_system/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -38,6 +39,7 @@ func main() {
 	userCollection := mongoClient.Database("reservation").Collection("Users")
 	hotelCollection := mongoClient.Database("reservation").Collection("Hotels")
 	roomCollection := mongoClient.Database("reservation").Collection("Rooms")
+	accountCollecton := mongoClient.Database("reservation").Collection("Accounts")
 
 	utils.CreateEmailIndex(userCollection)
 	if PORT == "" {
@@ -65,11 +67,16 @@ func main() {
 	r.HandleFunc("/hotels/{id}", UserAuthenticate(Hotels.UpdateHotelById(hotelCollection), userCollection))
 
 	// rooms
-	r.HandleFunc("/room", UserAuthenticate(rooms.POSTRooms(roomCollection, hotelCollection), userCollection))
+	r.HandleFunc("/room", UserAuthenticate(Rooms.POSTRooms(roomCollection, hotelCollection), userCollection))
+
+	// Accounts
+	r.HandleFunc("/account", UserAuthenticate(Account.AccountHandler(accountCollecton), userCollection))
+
 	server := http.Server{
 		Addr:    PORT,
 		Handler: r,
 	}
+
 	fmt.Println("********************************")
 	fmt.Printf("Server is listening on %s- \n", PORT)
 	fmt.Println("********************************")

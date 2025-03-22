@@ -1,6 +1,8 @@
 package types
 
 import (
+	"time"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -17,4 +19,6 @@ type Hotel struct {
 	AdditionalInfo3 any             `json:"additionalinfo3,omitempty" bson:"additionalinfo3,omitempty"`
 	TypesOfRooms    []string        `json:"typesofrooms,omitempty" bson:"typesofrooms,omitempty"`
 	Rooms           []bson.ObjectID `json:"rooms,omitempty" bson:"rooms,omitempty"`
+	Created         time.Time       `json:"created_at" bson:"created_at"`
+	Updated         time.Time       `json:"updated_at" bson:"updated_at"`
 }

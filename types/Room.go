@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -16,6 +17,8 @@ type Room struct {
 	Features     any           `json:"feature" bson:"feature"`
 	HotelID      bson.ObjectID `json:"hotelid" bson:"hotelid"`
 	RoomCategory string        `json:"roomcategory" bson:"roomcategory"`
+	Created      time.Time     `json:"created_at" bson:"created_at"`
+	Updated      time.Time     `json:"updated_at" bson:"updated_at"`
 }
 
 var (
@@ -24,7 +27,6 @@ var (
 )
 
 func (r *Room) RequestValidation() error {
-	fmt.Println(r.Class)
 	if !slices.Contains(class, strings.ToLower(r.Class)) {
 		return fmt.Errorf("invalid room class. only availabe room classes are - %v", class)
 	}

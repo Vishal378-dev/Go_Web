@@ -11,7 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	utils "github.com/vishal/reservation_system/Handlers/Utils"
-	Handlers "github.com/vishal/reservation_system/Handlers/dummy"
+	Handlers "github.com/vishal/reservation_system/Handlers/WrongPath"
 	"github.com/vishal/reservation_system/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"

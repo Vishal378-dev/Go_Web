@@ -7,9 +7,10 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	utils "github.com/vishal/reservation_system/Handlers/Utils"
-	Handlers "github.com/vishal/reservation_system/Handlers/dummy"
+	Handlers "github.com/vishal/reservation_system/Handlers/WrongPath"
 	"github.com/vishal/reservation_system/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -55,7 +56,8 @@ func Hotel(hotelCollection *mongo.Collection) http.HandlerFunc {
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(err, http.StatusBadRequest))
 				return
 			}
-			fmt.Println(hotelBody.Address)
+			hotelBody.Created = time.Now()
+			hotelBody.Updated = time.Now()
 			res, err := hotelCollection.InsertOne(ctx, hotelBody)
 			if err != nil {
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(err, http.StatusBadRequest))
@@ -257,6 +259,7 @@ func UpdateHotelById(hotelCollection *mongo.Collection) http.HandlerFunc {
 					"latitude":  existingHotel.Address.Coordinates.Latitude,
 				}
 			}
+			updateFields["updated_at"] = time.Now()
 			res, err := hotelCollection.UpdateOne(
 				ctx,
 				bson.M{"_id": id},
