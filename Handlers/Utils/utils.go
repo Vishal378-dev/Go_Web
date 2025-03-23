@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	constants "github.com/vishal/reservation_system/Constants"
 	"github.com/vishal/reservation_system/types"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -100,4 +101,13 @@ func ParseToken(tokenString string, secretKey string) (*types.UserClaims, error)
 
 func Ctx(timeOutSeconds int8) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.TODO(), time.Second*time.Duration(timeOutSeconds))
+}
+
+func ParseDate(date string) (*time.Time, error) {
+	layout := "02-01-2006 15:04:05"
+	parsedDate, err := time.Parse(layout, date)
+	if err != nil {
+		return nil, fmt.Errorf("invalid date format. format must be --> %s ", constants.DateFormat)
+	}
+	return &parsedDate, nil
 }

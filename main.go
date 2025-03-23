@@ -15,8 +15,8 @@ import (
 	"github.com/compose-spec/compose-go/v2/dotenv"
 	db "github.com/vishal/reservation_system/DB"
 	"github.com/vishal/reservation_system/Handlers/Account"
+	"github.com/vishal/reservation_system/Handlers/Booking"
 	"github.com/vishal/reservation_system/Handlers/Hotels"
-	"github.com/vishal/reservation_system/Handlers/Middleware"
 	Rooms "github.com/vishal/reservation_system/Handlers/Rooms"
 	"github.com/vishal/reservation_system/Handlers/Users"
 	utils "github.com/vishal/reservation_system/Handlers/Utils"
@@ -40,6 +40,7 @@ func main() {
 	hotelCollection := mongoClient.Database("reservation").Collection("Hotels")
 	roomCollection := mongoClient.Database("reservation").Collection("Rooms")
 	accountCollecton := mongoClient.Database("reservation").Collection("Accounts")
+	bookingCollection := mongoClient.Database("reservation").Collection("Bookings")
 
 	utils.CreateEmailIndex(userCollection)
 	if PORT == "" {
@@ -48,12 +49,10 @@ func main() {
 	r := http.NewServeMux()
 
 	r.HandleFunc("/", Handlers.WrongPathTemplate)
-	// user Collection
+	// user
 	r.HandleFunc("/user", UserAuthenticate(Users.Users(userCollection), userCollection))
 	r.HandleFunc("/user/{id}", UserAuthenticate(Users.UserDeleteOrUpdate(userCollection), userCollection))
 	r.HandleFunc("/user/login", Users.Login(userCollection))
-	//checkingMiddleware
-	r.HandleFunc("/middle", UserAuthenticate(Middleware.Authorize(userCollection), userCollection))
 
 	// Hotel
 	// rate limiter for hotel
@@ -72,6 +71,8 @@ func main() {
 	// Accounts
 	r.HandleFunc("/account", UserAuthenticate(Account.AccountHandler(accountCollecton), userCollection))
 
+	//
+	r.HandleFunc("/booking", UserAuthenticate(Booking.Bookings(bookingCollection, userCollection, roomCollection, accountCollecton), userCollection))
 	server := http.Server{
 		Addr:    PORT,
 		Handler: r,

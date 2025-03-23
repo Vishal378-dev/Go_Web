@@ -10,15 +10,20 @@ import (
 )
 
 type Room struct {
-	Class        string        `json:"class" bson:"class"`
-	RoomNumber   uint16        `json:"roomnumber" bson:"roomnumber"`
-	IsBooked     *bool         `json:"isbooked" bson:"isbooked"`
-	Price        float32       `json:"price" bson:"price"`
-	Features     any           `json:"feature" bson:"feature"`
-	HotelID      bson.ObjectID `json:"hotelid" bson:"hotelid"`
-	RoomCategory string        `json:"roomcategory" bson:"roomcategory"`
-	Created      time.Time     `json:"created_at" bson:"created_at"`
-	Updated      time.Time     `json:"updated_at" bson:"updated_at"`
+	Class                string        `json:"class" bson:"class"`
+	RoomNumber           uint16        `json:"roomnumber" bson:"roomnumber"`
+	IsBooked             *bool         `json:"isbooked" bson:"isbooked"`
+	Price                float32       `json:"price" bson:"price"`
+	Features             any           `json:"feature" bson:"feature"`
+	HotelID              bson.ObjectID `json:"hotelid" bson:"hotelid"`
+	RoomCategory         string        `json:"roomcategory" bson:"roomcategory"`
+	Description          string        `json:"description" bson:"description"`
+	UnavailableStartDate time.Time     `json:"unavailablestartdate" bson:"unavailablestartdate"`
+	UnavailableEndDate   time.Time     `json:"unavailableenddate" bson:"unavailableenddate"`
+	Status               string        `json:"status" bson:"status"`
+	LastMaintenance      time.Time     `json:"lastmaintenance" bson:"lastmaintenance"`
+	Created              time.Time     `json:"created_at" bson:"created_at"`
+	Updated              time.Time     `json:"updated_at" bson:"updated_at"`
 }
 
 var (

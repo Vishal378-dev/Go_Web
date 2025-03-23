@@ -75,3 +75,12 @@ http://localhost:8000/account?id=67debee3dc0647d58e9db5a1
   "balance":100,
   "userid":"67cd4fdfe107cfeb6e8ba9cd"
 }
+
+
+http://localhost:8000/booking
+
+{
+  "roomid":"67de6ec5261c3aa1580c2fc0",
+  "startdate":"25-03-2025 12:00:00",
+  "enddate":"26-03-2025 12:00:00"
+}
