@@ -84,3 +84,20 @@ http://localhost:8000/booking
   "startdate":"25-03-2025 12:00:00",
   "enddate":"26-03-2025 12:00:00"
 }
+
+
+
+
+
+http://localhost:8000/account
+
+{
+  "bankname":"HDFC BANK",
+  "accountnumber":93840348,
+  "bankifsc":"hdfc930282",
+  "bankholderfirstname":"Gyenrui",
+  "bankholderlastname":"yamamoto",
+  "balance":0,
+  "userid":"67dc00a9cf105d8ef3e03ebd"
+}
+

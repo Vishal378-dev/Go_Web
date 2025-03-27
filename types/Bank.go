@@ -16,13 +16,14 @@ type Transaction struct {
 }
 
 type BankAccount struct {
+	ID                  bson.ObjectID  `json:"_id,omitempty" bson:"_id,omitempty"`
 	BankName            string         `json:"bankname" bson:"bankname"`
 	AccountNumber       int            `json:"accountnumber" bson:"accountnumber"`
 	BankIfsc            string         `json:"bankifsc" bson:"bankifsc"`
 	BankHolderFirstName string         `json:"bankholderfirstname" bson:"bankholderfirstname"`
 	BankHolderLastName  string         `json:"bankholderlastname" bson:"bankholderlastname"`
-	Balance             int            `json:"balance" bson:"balance"`
-	TransactionHistory  []Transaction  `json:"transactionhistory" bson:"transactionhistory"`
+	Balance             float32        `json:"balance" bson:"balance"`
+	TransactionHistory  []Transaction  `json:"transactionhistory,omitempty" bson:"transactionhistory,omitempty"`
 	UserId              *bson.ObjectID `json:"userid" bson:"userid"`
 	Created             time.Time      `json:"created_at" bson:"created_at"`
 	Updated             time.Time      `json:"updated_at" bson:"updated_at"`

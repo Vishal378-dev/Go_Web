@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	constants "github.com/vishal/reservation_system/Constants"
 	utils "github.com/vishal/reservation_system/Handlers/Utils"
@@ -83,10 +84,54 @@ func Bookings(bookingCollection, userCollection, roomCollection, accountCollecto
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while updating room"), http.StatusBadRequest))
 				return
 			}
+			newBalance := Account.Balance - Room.Price
+			fmt.Println(Account.ID)
 			// update bank user
-
+			updateBankResult, err := accountCollecton.UpdateOne(ctx, bson.M{"_id": Account.ID}, bson.M{
+				"$set": bson.M{
+					"balance": newBalance,
+					"updated": time.Now(),
+				},
+				"$push": bson.M{
+					"transactionhistory": bson.M{
+						"spendin":        "room",
+						"spendingitemid": bookingRequest.RoomId,
+						"amount":         Room.Price,
+						"created":        time.Now(),
+						"updated":        time.Now(),
+					},
+				},
+			},
+			)
+			if err != nil {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while updating Account"), http.StatusBadRequest))
+				return
+			}
 			// update admin account
-			fmt.Println(updateResult, insertResult)
+			adminId, err := bson.ObjectIDFromHex("67e58fd9b260e000f4637ac0")
+			if err != nil {
+				panic(err)
+			}
+			// addMoney := Account.Balance + Room.Price
+			// fetch the account admin current balance
+			accountCollecton.UpdateOne(ctx, bson.M{"_id": adminId}, bson.M{
+				"$set": bson.M{
+					// "balance": addMoney,
+					"updated": time.Now(),
+				},
+				"$push": bson.M{
+					"transactionhistory": bson.M{
+						"spendin":        "room",
+						"spendingitemid": bookingRequest.RoomId,
+						"amount":         Room.Price,
+						"created":        time.Now(),
+						"updated":        time.Now(),
+					},
+				},
+			},
+			)
+
+			fmt.Println(updateResult, insertResult, updateBankResult)
 		} else {
 			Handlers.WrongPathTemplate(w, r)
 			return
