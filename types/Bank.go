@@ -8,11 +8,11 @@ import (
 )
 
 type Transaction struct {
-	SpendIn        string          `json:"spendin" bson:"spendin"`
-	SpendingItemId []bson.ObjectID `json:"spendingitemid" bson:"spendingitemid"`
-	Amount         int             `json:"amount" bson:"amount"`
-	Created        time.Time       `json:"created_at" bson:"created_at"`
-	Updated        time.Time       `json:"updated_at" bson:"updated_at"`
+	SpendIn        string        `json:"spendin" bson:"spendin"`
+	SpendingItemId bson.ObjectID `json:"spendingitemid" bson:"spendingitemid"`
+	Amount         int           `json:"amount" bson:"amount"`
+	Created        time.Time     `json:"created_at" bson:"created_at"`
+	Updated        time.Time     `json:"updated_at" bson:"updated_at"`
 }
 
 type BankAccount struct {

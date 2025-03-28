@@ -3,6 +3,7 @@ module github.com/vishal/reservation_system
 go 1.23.3
 
 require (
+	github.com/compose-spec/compose-go v1.20.2
 	github.com/compose-spec/compose-go/v2 v2.4.8
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	go.mongodb.org/mongo-driver/v2 v2.1.0
@@ -13,6 +14,7 @@ require (
 require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect

@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func Bookings(bookingCollection, userCollection, roomCollection, accountCollecton *mongo.Collection) http.HandlerFunc {
+func Bookings(bookingCollection, userCollection, roomCollection, accountCollecton *mongo.Collection, AdminID string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := utils.Ctx(5)
 		defer cancel()
@@ -29,6 +29,7 @@ func Bookings(bookingCollection, userCollection, roomCollection, accountCollecto
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("invalid token"), http.StatusBadRequest))
 				return
 			}
+
 			var Booking types.Booking
 			var Account types.BankAccount
 			if userId, ok := currentUser.ID.(bson.ObjectID); ok {
@@ -50,7 +51,14 @@ func Bookings(bookingCollection, userCollection, roomCollection, accountCollecto
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(err, http.StatusBadRequest))
 				return
 			}
-
+			if parsedBookingStartDate.Before(time.Now()) {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf(constants.StartDateError), http.StatusBadRequest))
+				return
+			}
+			if parsedBookingEndDate.Before(*parsedBookingStartDate) {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf(constants.EndDateError), http.StatusBadRequest))
+				return
+			}
 			Booking.StartDate = *parsedBookingStartDate
 			Booking.EndDate = *parsedBookingEndDate
 			Booking.RoomId = bookingRequest.RoomId
@@ -62,8 +70,17 @@ func Bookings(bookingCollection, userCollection, roomCollection, accountCollecto
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf(constants.InvalidRoomId), http.StatusBadRequest))
 				return
 			}
+			if *Room.IsBooked {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf(constants.RoomAlreadyBooked), http.StatusBadRequest))
+				return
+			}
+			numberOfDaysToStay := parsedBookingEndDate.Sub(*parsedBookingStartDate)
+			totalPrice := Room.Price * float32(numberOfDaysToStay.Hours()/24)
+			if totalPrice > Account.Balance {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf(constants.InsuffientBalance), http.StatusBadRequest))
+				return
+			}
 			Booking.AmountPaid = float32(Room.Price)
-			fmt.Printf("%+v\n", Booking)
 
 			// insert booking
 			insertResult, err := bookingCollection.InsertOne(ctx, Booking)
@@ -84,8 +101,8 @@ func Bookings(bookingCollection, userCollection, roomCollection, accountCollecto
 				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("error while updating room"), http.StatusBadRequest))
 				return
 			}
-			newBalance := Account.Balance - Room.Price
-			fmt.Println(Account.ID)
+			newBalance := Account.Balance - totalPrice
+			fmt.Println(newBalance)
 			// update bank user
 			updateBankResult, err := accountCollecton.UpdateOne(ctx, bson.M{"_id": Account.ID}, bson.M{
 				"$set": bson.M{
@@ -96,7 +113,7 @@ func Bookings(bookingCollection, userCollection, roomCollection, accountCollecto
 					"transactionhistory": bson.M{
 						"spendin":        "room",
 						"spendingitemid": bookingRequest.RoomId,
-						"amount":         Room.Price,
+						"amount":         totalPrice,
 						"created":        time.Now(),
 						"updated":        time.Now(),
 					},
@@ -108,15 +125,22 @@ func Bookings(bookingCollection, userCollection, roomCollection, accountCollecto
 				return
 			}
 			// update admin account
-			adminId, err := bson.ObjectIDFromHex("67e58fd9b260e000f4637ac0")
+			adminId, err := bson.ObjectIDFromHex(AdminID)
 			if err != nil {
 				panic(err)
 			}
-			// addMoney := Account.Balance + Room.Price
+			var adminAccount types.BankAccount
+			adminUserAccountResult := accountCollecton.FindOne(ctx, bson.M{"userid": adminId}).Decode(&adminAccount)
+			if adminUserAccountResult != nil {
+				fmt.Println(adminUserAccountResult)
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf("invalid admin id"), http.StatusBadRequest))
+				return
+			}
+			addMoney := adminAccount.Balance + totalPrice
 			// fetch the account admin current balance
-			accountCollecton.UpdateOne(ctx, bson.M{"_id": adminId}, bson.M{
+			res, err := accountCollecton.UpdateOne(ctx, bson.M{"_id": adminId}, bson.M{
 				"$set": bson.M{
-					// "balance": addMoney,
+					"balance": addMoney,
 					"updated": time.Now(),
 				},
 				"$push": bson.M{
@@ -130,8 +154,18 @@ func Bookings(bookingCollection, userCollection, roomCollection, accountCollecto
 				},
 			},
 			)
-
-			fmt.Println(updateResult, insertResult, updateBankResult)
+			if err != nil {
+				utils.ResponseWriter(w, http.StatusBadRequest, utils.CommonError(fmt.Errorf(err.Error()), http.StatusBadRequest))
+				return
+			}
+			utils.ResponseWriter(w, http.StatusOK, map[string]interface{}{
+				"msg":   "successfully Booked",
+				"data":  res,
+				"data1": updateBankResult,
+				"data2": updateResult,
+				"data3": insertResult,
+			})
+			return
 		} else {
 			Handlers.WrongPathTemplate(w, r)
 			return

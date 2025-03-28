@@ -34,6 +34,7 @@ func main() {
 	}
 	PORT := os.Getenv("port")
 	MONGODB_URI := os.Getenv("MONGODB_URI")
+	AdminID := os.Getenv("Admin_ID")
 	mongoClient := db.DB_Connection(MONGODB_URI)
 
 	userCollection := mongoClient.Database("reservation").Collection("Users")
@@ -72,7 +73,7 @@ func main() {
 	r.HandleFunc("/account", UserAuthenticate(Account.AccountHandler(accountCollecton), userCollection))
 
 	//
-	r.HandleFunc("/booking", UserAuthenticate(Booking.Bookings(bookingCollection, userCollection, roomCollection, accountCollecton), userCollection))
+	r.HandleFunc("/booking", UserAuthenticate(Booking.Bookings(bookingCollection, userCollection, roomCollection, accountCollecton, AdminID), userCollection))
 	server := http.Server{
 		Addr:    PORT,
 		Handler: r,
